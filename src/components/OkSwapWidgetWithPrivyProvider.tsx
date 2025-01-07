@@ -6,6 +6,7 @@ import {
   OkxEventListeners,
   OkxEvents,
   fetchDomain,
+  OkxSwapWidgetHandler,
 } from "@okxweb3/dex-widget";
 import {
   EIP1193Provider,
@@ -24,17 +25,19 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
   tokenAddress,
 }) => {
   const widgetRef = useRef<HTMLDivElement>(null);
-  const [domain, setDomain] = useState<string | undefined>();
+  const [domain, setDomain] = useState<string | undefined>("fetching");
   const { wallets } = useWallets();
   const { user, login } = usePrivy();
   const [provider, setProvider] = useState<any | undefined>();
   const { connectWallet } = useConnectWallet();
   const { setActiveWallet } = useSetActiveWallet();
+  const [instance, setInstance] = useState<OkxSwapWidgetHandler | undefined>();
 
   const listeners: OkxEventListeners = useMemo(() => {
     return [
       {
         event: OkxEvents.ON_CONNECT_WALLET,
+        // useCallback, updateListeners
         handler: async () => {
           console.log(
             "createOkxSwapWidgetWithPrivy - OkxEvents.ON_CONNECT_WALLET",
@@ -42,28 +45,17 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
             user
           );
           if (!user?.id) {
+            console.log("createOkxSwapWidgetWithPrivy - login");
             login();
             return;
           }
-          if (!!provider) {
-            provider.enable();
-          } else
-            connectWallet({
-              suggestedAddress: user?.wallet?.address ?? "",
-            });
+          connectWallet({
+            suggestedAddress: user?.wallet?.address ?? "",
+          });
         },
       },
     ];
-  }, [user, provider]);
-
-  // set domain on load
-  useEffect(() => {
-    fetchDomain()
-      .then((domain) => {
-        setDomain(domain ?? undefined);
-      })
-      .catch(() => {});
-  }, []);
+  }, [user?.id, user?.wallet?.address, login, connectWallet]);
 
   // populate token pair
   const tokenPair = useMemo(() => {
@@ -77,11 +69,9 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
   }, [tokenAddress]);
 
   useEffect(() => {
-    if (!widgetRef.current) return;
+    if (!widgetRef.current || domain === "fetching") return;
     console.log(
-      "createOkxSwapWidgetWithPrivy",
-      window.ethereum,
-      provider,
+      "createOkxSwapWidgetWithPrivy - instantiation",
       tokenPair,
       domain
     );
@@ -98,14 +88,13 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
       provider: provider,
       listeners,
     });
-
+    setInstance(localInstance);
     return () => {
       localInstance?.destroy();
     };
-  }, [tokenPair, domain, provider, listeners]);
+  }, [tokenPair, domain]);
 
   const refetchProvider = async () => {
-    // Choose the provider used by the privy user
     const targetWallet = wallets?.find(
       (wallet) =>
         wallet.address?.toLowerCase() === user?.wallet?.address?.toLowerCase()
@@ -117,16 +106,39 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
     }
     console.log(
       "createOkxSwapWidgetWithPrivy - refetchProvider",
-      targetWallet,
-      privyProvider
+      privyProvider,
+      user?.wallet?.address,
+      wallets,
+      targetWallet
     );
-    // @ts-ignore
-    setProvider(privyProvider?.walletProvider);
+    // setProvider(privyProvider?.walletProvider);
+    setProvider(privyProvider);
   };
 
   useEffect(() => {
     refetchProvider();
   }, [wallets, user?.wallet?.address]);
+
+  useEffect(() => {
+    console.log("privyProvider has changed", provider, instance);
+    instance?.updateProvider(provider, ProviderType.EVM);
+  }, [provider]);
+
+  useEffect(() => {
+    console.log("listeners has changed", listeners);
+    instance?.updateListeners(listeners);
+  }, [listeners]);
+
+  // set domain on load
+  useEffect(() => {
+    fetchDomain()
+      .then((domain) => {
+        setDomain(domain ?? undefined);
+      })
+      .catch(() => {
+        setDomain(undefined);
+      });
+  }, []);
 
   return <div ref={widgetRef} className="w-full rounded-2xl overflow-hidden" />;
 };
