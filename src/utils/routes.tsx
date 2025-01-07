@@ -2,6 +2,7 @@ import { Outlet, RouteObject, createBrowserRouter } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { OkSwapWidget } from "../components/OkSwapWidget";
 import { OkSwapWidgetWithPrivyProvider } from "../components/OkSwapWidgetWithPrivyProvider";
+import { OkSwapWidgetDemo } from "../components/OkSwapWidgetDemo";
 
 const routeConstants = [
   {
@@ -15,6 +16,10 @@ const routeConstants = [
     element: (
       <OkSwapWidgetWithPrivyProvider tokenAddress="0x645C7Aa841087E2e7f741C749aB27422fF5BbA8E" />
     ),
+  },
+  {
+    path: "/swap3",
+    element: <OkSwapWidgetDemo />,
   },
 ];
 
