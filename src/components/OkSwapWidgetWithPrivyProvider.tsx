@@ -31,28 +31,30 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
   const { connectWallet } = useConnectWallet();
   const { setActiveWallet } = useSetActiveWallet();
 
-  const listeners: OkxEventListeners = [
-    {
-      event: OkxEvents.ON_CONNECT_WALLET,
-      handler: async () => {
-        console.log(
-          "createOkxSwapWidgetWithPrivy - OkxEvents.ON_CONNECT_WALLET",
-          provider,
-          user
-        );
-        if (!user) {
-          login();
-          return;
-        }
-        if (!!provider) {
-          provider.enable();
-        } else
-          connectWallet({
-            suggestedAddress: user?.wallet?.address ?? "",
-          });
+  const listeners: OkxEventListeners = useMemo(() => {
+    return [
+      {
+        event: OkxEvents.ON_CONNECT_WALLET,
+        handler: async () => {
+          console.log(
+            "createOkxSwapWidgetWithPrivy - OkxEvents.ON_CONNECT_WALLET",
+            provider,
+            user
+          );
+          if (!user?.id) {
+            login();
+            return;
+          }
+          if (!!provider) {
+            provider.enable();
+          } else
+            connectWallet({
+              suggestedAddress: user?.wallet?.address ?? "",
+            });
+        },
       },
-    },
-  ];
+    ];
+  }, [user, provider]);
 
   // set domain on load
   useEffect(() => {
@@ -100,7 +102,7 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
     return () => {
       localInstance?.destroy();
     };
-  }, [tokenPair, domain, provider]);
+  }, [tokenPair, domain, provider, listeners]);
 
   const refetchProvider = async () => {
     // Choose the provider used by the privy user
