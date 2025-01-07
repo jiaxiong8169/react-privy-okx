@@ -17,6 +17,7 @@ import {
 } from "@privy-io/react-auth";
 import { useSetActiveWallet } from "@privy-io/wagmi";
 import { base } from "viem/chains";
+import { useWriteContract } from "wagmi";
 
 type Props = {
   tokenAddress: string;
@@ -36,6 +37,14 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
   const [targetWallet, setTargetWallet] = useState<
     ConnectedWallet | undefined
   >();
+  // Sample for writing contract
+  const { writeContractAsync } = useWriteContract({
+    mutation: {
+      onError(error) {
+        console.error(error);
+      },
+    },
+  });
 
   const listeners: OkxEventListeners = useMemo(() => {
     return [
