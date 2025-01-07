@@ -9,6 +9,7 @@ import {
   OkxSwapWidgetHandler,
 } from "@okxweb3/dex-widget";
 import {
+  ConnectedWallet,
   EIP1193Provider,
   useConnectWallet,
   usePrivy,
@@ -32,6 +33,9 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
   const { connectWallet } = useConnectWallet();
   const { setActiveWallet } = useSetActiveWallet();
   const [instance, setInstance] = useState<OkxSwapWidgetHandler | undefined>();
+  const [targetWallet, setTargetWallet] = useState<
+    ConnectedWallet | undefined
+  >();
 
   const listeners: OkxEventListeners = useMemo(() => {
     return [
@@ -41,11 +45,12 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
         handler: async () => {
           console.log(
             "createOkxSwapWidgetWithPrivy - OkxEvents.ON_CONNECT_WALLET",
+            "privy.provider",
             provider,
+            "privy.user",
             user
           );
           if (!user?.id) {
-            console.log("createOkxSwapWidgetWithPrivy - login");
             login();
             return;
           }
@@ -72,7 +77,9 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
     if (!widgetRef.current || domain === "fetching") return;
     console.log(
       "createOkxSwapWidgetWithPrivy - instantiation",
+      "tokenPair",
       tokenPair,
+      "domain",
       domain
     );
 
@@ -105,14 +112,19 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
       privyProvider = await targetWallet.getEthereumProvider();
     }
     console.log(
-      "createOkxSwapWidgetWithPrivy - refetchProvider",
+      "createOkxSwapWidgetWithPrivy - privy refetchProvider",
+      "privy.provider",
       privyProvider,
+      "privy.user.wallet.address",
       user?.wallet?.address,
+      "privy.wallets",
       wallets,
+      "privy.targetWallet",
       targetWallet
     );
-    // setProvider(privyProvider?.walletProvider);
-    setProvider(privyProvider);
+    // @ts-ignore
+    setProvider(privyProvider?.walletProvider ?? privyProvider);
+    setTargetWallet(targetWallet);
   };
 
   useEffect(() => {
@@ -120,12 +132,24 @@ export const OkSwapWidgetWithPrivyProvider: React.FC<Props> = ({
   }, [wallets, user?.wallet?.address]);
 
   useEffect(() => {
-    console.log("privyProvider has changed", provider, instance);
-    instance?.updateProvider(provider, ProviderType.EVM);
-  }, [provider]);
+    console.log(
+      "privyProvider has changed",
+      "privy.provider",
+      provider,
+      "okswap.instance",
+      instance,
+      "privy.targetWallet",
+      targetWallet
+    );
+    instance?.updateProvider(
+      provider,
+      targetWallet?.connectorType?.includes("wallet_connect")
+        ? ProviderType.WALLET_CONNECT
+        : ProviderType.EVM
+    );
+  }, [provider, targetWallet]);
 
   useEffect(() => {
-    console.log("listeners has changed", listeners);
     instance?.updateListeners(listeners);
   }, [listeners]);
 

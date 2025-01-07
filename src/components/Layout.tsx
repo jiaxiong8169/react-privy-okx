@@ -6,7 +6,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const { logout } = useLogout();
 
   return (
-    <div className="flex flex-col w-screen h-screen items-center gap-6">
+    <div className="flex flex-col w-screen h-screen items-center gap-6 justify-center">
       {user?.id ? (
         <button onClick={() => logout()}>Logout</button>
       ) : (
